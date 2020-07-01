@@ -3,34 +3,32 @@ use crate::types::{SArray, StringT, SuffixError};
 use std::convert::TryInto;
 
 fn suffixtree(
-    t: &StringT,
-    sa: &mut SArray,
-    l: &mut SArray,
-    r: &mut SArray,
-    d: &mut SArray,
+    string: &StringT,
+    suffix_array: &mut SArray,
+    left: &mut SArray,
+    right: &mut SArray,
+    depth: &mut SArray,
     n: usize,
 ) -> usize {
     if n == 0 {
         return 0;
     }
 
-    println!("-------------");
-    println!("sa {:?}", sa);
     // Psi = l
-    l[sa[0]] = sa[n - 1];
+    left[suffix_array[0]] = suffix_array[n - 1];
     for i in 1..n {
-        l[sa[i]] = sa[i - 1];
+        left[suffix_array[i]] = suffix_array[i - 1];
     }
     // Compare at most 2n log n charcters. Practically fastest
     // "Permuted Longest-Common-Prefix Array", Juha Karkkainen, CPM 09
     // PLCP = r
     let mut h = 0;
     for i in 0..n {
-        let j = l[i];
-        while i + h < n && j + h < n && t[i + h] == t[j + h] {
+        let j = left[i];
+        while i + h < n && j + h < n && string[i + h] == string[j + h] {
             h += 1;
         }
-        r[i] = h;
+        right[i] = h;
         if h > 0 {
             h -= 1;
         }
@@ -38,7 +36,7 @@ fn suffixtree(
 
     // H = l
     for i in 0..n {
-        l[i] = r[sa[i]];
+        left[i] = right[suffix_array[i]];
     }
     // TODO XXX: i32 necessary
     // l[0] = -1;
@@ -47,13 +45,13 @@ fn suffixtree(
     let mut node_num = 0;
     let mut i: usize = 0;
     loop {
-        let mut cur: (i32, i32) = (i as i32, if i == n { -1 } else { l[i] as i32 });
+        let mut cur: (i32, i32) = (i as i32, if i == n { -1 } else { left[i] as i32 });
         let mut cand = s[s.len() - 1];
         while cand.1 > cur.1 {
             if (i as i32) - cand.0 > 1 {
-                l[node_num] = cand.0.try_into().unwrap();
-                r[node_num] = i;
-                d[node_num] = cand.1.try_into().unwrap();
+                left[node_num] = cand.0.try_into().unwrap();
+                right[node_num] = i;
+                depth[node_num] = cand.1.try_into().unwrap();
                 node_num += 1;
                 if node_num >= n {
                     break;
@@ -69,7 +67,7 @@ fn suffixtree(
         if i == n {
             break;
         }
-        s.push((i.try_into().unwrap(), (n - sa[i] + 1).try_into().unwrap()));
+        s.push((i.try_into().unwrap(), (n - suffix_array[i] + 1).try_into().unwrap()));
         i += 1;
     }
     node_num
