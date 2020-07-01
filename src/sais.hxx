@@ -38,6 +38,12 @@
 #ifdef _OPENMP
 # include <omp.h>
 #endif
+#include <iostream>
+
+int32_t f(const int32_t s){
+    int a = ((s < 0)?-~s:s);
+    return a;
+}
 
 namespace saisxx_private {
 
@@ -92,12 +98,15 @@ typedef typename std::iterator_traits<string_type>::value_type char_type;
   index_type i, j;
   char_type c0, c1;
   /* compute SAl */
-  if(C == B) { getCounts(T, C, n, k); }
+  if(C == B) { 
+      getCounts(T, C, n, k); }
   getBuckets(C, B, k, false); /* find starts of buckets */
   b = SA + B[c1 = T[j = n - 1]];
   *b++ = ((0 < j) && (T[j - 1] < c1)) ? ~j : j;
+  
   for(i = 0; i < n; ++i) {
     j = SA[i], SA[i] = ~j;
+
     if(0 < j) {
       if((c0 = T[--j]) != c1) { B[c1] = b - SA; b = SA + B[c1 = c0]; }
       *b++ = ((0 < j) && (T[j - 1] < c1)) ? ~j : j;
@@ -106,6 +115,7 @@ typedef typename std::iterator_traits<string_type>::value_type char_type;
   /* compute SAs */
   if(C == B) { getCounts(T, C, n, k); }
   getBuckets(C, B, k, true); /* find ends of buckets */
+
   for(i = n - 1, b = SA + B[c1 = 0]; 0 <= i; --i) {
     if(0 < (j = SA[i])) {
       if((c0 = T[--j]) != c1) { B[c1] = b - SA; b = SA + B[c1 = c0]; }
@@ -225,7 +235,8 @@ typedef typename std::iterator_traits<string_type>::value_type char_type;
     p = SA[i];
     if((0 < p) && (T[p - 1] > (c0 = T[p]))) {
       for(j = p + 1; (j < n) && (c0 == (c1 = T[j])); ++j) { }
-      if((j < n) && (c0 < c1)) { SA[m++] = p; }
+      if((j < n) && (c0 < c1)) { 
+          SA[m++] = p; }
     }
   }
 #endif

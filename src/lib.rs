@@ -13,8 +13,16 @@
 //! assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
 //! assert_eq!(iter.next(), None);
 //! ```
+#![feature(test)]
+extern crate test;
 
 use std::convert::TryInto;
+mod esa;
+mod sais;
+mod types;
+
+pub use esa::esaxx_rs;
+use types::SuffixError;
 
 extern "C" {
     pub fn esaxx_int32(
@@ -30,19 +38,6 @@ extern "C" {
     ) -> i32;
 }
 
-#[derive(Debug)]
-pub enum Error {
-    InvalidLength,
-    Internal,
-    IntConversion(std::num::TryFromIntError),
-}
-
-impl From<std::num::TryFromIntError> for Error {
-    fn from(err: std::num::TryFromIntError) -> Self {
-        Self::IntConversion(err)
-    }
-}
-
 pub fn esaxx(
     chars: &[char],
     sa: &mut [i32],
@@ -51,10 +46,10 @@ pub fn esaxx(
     d: &mut [i32],
     alphabet_size: u32,
     mut node_num: &mut u32,
-) -> Result<(), Error> {
+) -> Result<(), SuffixError> {
     let n = chars.len();
     if sa.len() != n || l.len() != n || r.len() != n || d.len() != n {
-        return Err(Error::InvalidLength);
+        return Err(SuffixError::InvalidLength);
     }
     unsafe {
         let err = esaxx_int32(
@@ -68,27 +63,46 @@ pub fn esaxx(
             &mut node_num,
         );
         if err != 0 {
-            return Err(Error::Internal);
+            return Err(SuffixError::Internal);
         }
     }
     Ok(())
 }
 
-pub struct SuffixIterator<'a> {
+pub struct SuffixIterator<'a, T> {
     i: usize,
-    suffix: &'a Suffix,
+    suffix: &'a Suffix<T>,
 }
 
-pub struct Suffix {
+pub struct Suffix<T> {
     chars: Vec<char>,
-    sa: Vec<i32>,
-    l: Vec<i32>,
-    r: Vec<i32>,
-    d: Vec<i32>,
+    sa: Vec<T>,
+    l: Vec<T>,
+    r: Vec<T>,
+    d: Vec<T>,
     node_num: usize,
 }
 
-pub fn suffix(string: &str) -> Result<Suffix, Error> {
+pub fn suffix_rs(string: &str) -> Result<Suffix<usize>, SuffixError> {
+    let chars: Vec<_> = string.chars().collect();
+    let n = chars.len();
+    let mut sa = vec![0; n];
+    let mut l = vec![0; n];
+    let mut r = vec![0; n];
+    let mut d = vec![0; n];
+    let alphabet_size = 0x110000; // All UCS4 range.
+    let node_num = esaxx_rs(&chars, &mut sa, &mut l, &mut r, &mut d, alphabet_size)?;
+    Ok(Suffix {
+        chars,
+        sa,
+        l,
+        r,
+        d,
+        node_num,
+    })
+}
+
+pub fn suffix(string: &str) -> Result<Suffix<i32>, SuffixError> {
     let chars: Vec<_> = string.chars().collect();
     let n = chars.len();
     let mut sa = vec![0; n];
@@ -116,13 +130,13 @@ pub fn suffix(string: &str) -> Result<Suffix, Error> {
     })
 }
 
-impl Suffix {
-    pub fn iter(&self) -> SuffixIterator<'_> {
+impl<T> Suffix<T> {
+    pub fn iter(&self) -> SuffixIterator<'_, T> {
         SuffixIterator { i: 0, suffix: self }
     }
 }
 
-impl<'a> Iterator for SuffixIterator<'a> {
+impl<'a> Iterator for SuffixIterator<'a, i32> {
     type Item = (&'a [char], u32);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -142,9 +156,30 @@ impl<'a> Iterator for SuffixIterator<'a> {
     }
 }
 
+impl<'a> Iterator for SuffixIterator<'a, usize> {
+    type Item = (&'a [char], u32);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let index = self.i;
+        if index == self.suffix.node_num {
+            None
+        } else {
+            let left: usize = self.suffix.l[index];
+            let offset: usize = self.suffix.sa[left];
+            let len: usize = self.suffix.d[index];
+            let freq: u32 = (self.suffix.r[index] - self.suffix.l[index])
+                .try_into()
+                .unwrap();
+            self.i += 1;
+            Some((&self.suffix.chars[offset..offset + len], freq))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test::Bencher;
 
     #[test]
     fn test_esaxx() {
@@ -176,6 +211,80 @@ mod tests {
     }
 
     #[test]
+    fn test_esaxx_long() {
+        let string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.".to_string();
+        let chars: Vec<_> = string.chars().collect();
+        let n = chars.len();
+        let mut sa = vec![0; n];
+        let mut l = vec![0; n];
+        let mut r = vec![0; n];
+        let mut d = vec![0; n];
+        let mut node_num = 0;
+        let alphabet_size = 0x110000; // All UCS4 range.
+
+        esaxx(
+            &chars,
+            &mut sa,
+            &mut l,
+            &mut r,
+            &mut d,
+            alphabet_size,
+            &mut node_num,
+        )
+        .unwrap();
+        assert_eq!(chars.len(), 574);
+        assert_eq!(node_num, 260);
+        // assert_eq!(sa, vec![10, 7, 0, 3, 5, 8, 1, 4, 6, 9, 2]);
+        // assert_eq!(l, vec![1, 0, 5, 9, 0, 0, 3, 0, 0, 0, 2]);
+        // assert_eq!(r, vec![3, 5, 7, 11, 11, 1, 0, 1, 0, 0, 0]);
+        // assert_eq!(d, vec![4, 1, 3, 2, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_esaxx_rs() {
+        let string = "abracadabra".to_string();
+        let chars: Vec<_> = string.chars().collect();
+        let n = chars.len();
+        let mut sa = vec![0; n];
+        let mut l = vec![0; n];
+        let mut r = vec![0; n];
+        let mut d = vec![0; n];
+        let alphabet_size = 0x110000; // All UCS4 range.
+
+        let node_num = esaxx_rs(&chars, &mut sa, &mut l, &mut r, &mut d, alphabet_size).unwrap();
+        println!("Node num {}", node_num);
+        println!("sa {:?}", sa);
+        println!("l {:?}", l);
+        println!("r {:?}", r);
+        println!("d {:?}", d);
+        assert_eq!(node_num, 5);
+        assert_eq!(sa, vec![10, 7, 0, 3, 5, 8, 1, 4, 6, 9, 2]);
+        assert_eq!(l, vec![1, 0, 5, 9, 0, 0, 3, 0, 0, 0, 2]);
+        assert_eq!(r, vec![3, 5, 7, 11, 11, 1, 0, 1, 0, 0, 0]);
+        assert_eq!(d, vec![4, 1, 3, 2, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_esaxx_rs_long() {
+        let string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.".to_string();
+        let chars: Vec<_> = string.chars().collect();
+        let n = chars.len();
+        let mut sa = vec![0; n];
+        let mut l = vec![0; n];
+        let mut r = vec![0; n];
+        let mut d = vec![0; n];
+        let alphabet_size = 0x110000; // All UCS4 range.
+
+        let node_num = esaxx_rs(&chars, &mut sa, &mut l, &mut r, &mut d, alphabet_size).unwrap();
+        assert_eq!(chars.len(), 574);
+        assert_eq!(node_num, 260);
+        // assert_eq!(sa, vec![10, 7, 0, 3, 5, 8, 1, 4, 6, 9, 2]);
+        // assert_eq!(l, vec![1, 0, 5, 9, 0, 0, 3, 0, 0, 0, 2]);
+        // assert_eq!(r, vec![3, 5, 7, 11, 11, 1, 0, 1, 0, 0, 0]);
+        // assert_eq!(d, vec![4, 1, 3, 2, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
     fn test_suffix() {
         let suffix = suffix("abracadabra").unwrap();
         assert_eq!(suffix.node_num, 5);
@@ -192,5 +301,48 @@ mod tests {
         assert_eq!(iter.next(), Some((&chars[2..4], 2))); // ra
         assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_suffix_rs() {
+        let suffix = suffix_rs("abracadabra").unwrap();
+        assert_eq!(suffix.node_num, 5);
+        assert_eq!(suffix.sa, vec![10, 7, 0, 3, 5, 8, 1, 4, 6, 9, 2]);
+        assert_eq!(suffix.l, vec![1, 0, 5, 9, 0, 0, 3, 0, 0, 0, 2]);
+        assert_eq!(suffix.r, vec![3, 5, 7, 11, 11, 1, 0, 1, 0, 0, 0]);
+        assert_eq!(suffix.d, vec![4, 1, 3, 2, 0, 0, 0, 0, 0, 0, 0]);
+
+        let mut iter = suffix.iter();
+        let chars: Vec<_> = "abracadabra".chars().collect();
+        assert_eq!(iter.next(), Some((&chars[..4], 2))); // abra
+        assert_eq!(iter.next(), Some((&chars[..1], 5))); // a
+        assert_eq!(iter.next(), Some((&chars[1..4], 2))); // bra
+        assert_eq!(iter.next(), Some((&chars[2..4], 2))); // ra
+        assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
+        assert_eq!(iter.next(), None);
+    }
+
+    #[bench]
+    fn bench_esaxx_long(b: &mut Bencher) {
+        let string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.".to_string();
+        b.iter(|| suffix(&string).unwrap());
+    }
+
+    #[bench]
+    fn bench_esaxx_long2(b: &mut Bencher) {
+        let string = std::fs::read_to_string("data/eighty.txt").unwrap();
+        b.iter(|| suffix(&string).unwrap());
+    }
+
+    #[bench]
+    fn bench_esaxx_rs_long(b: &mut Bencher) {
+        let string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.".to_string();
+        b.iter(|| suffix_rs(&string).unwrap());
+    }
+
+    #[bench]
+    fn bench_esaxx_rs_long2(b: &mut Bencher) {
+        let string = std::fs::read_to_string("data/eighty.txt").unwrap();
+        b.iter(|| suffix_rs(&string).unwrap());
     }
 }
