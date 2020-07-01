@@ -32,8 +32,6 @@
 //! assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
 //! assert_eq!(iter.next(), None);
 //! ```
-#![feature(test)]
-extern crate test;
 
 use std::convert::TryInto;
 mod esa;
@@ -216,7 +214,6 @@ impl<'a> Iterator for SuffixIterator<'a, usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test::Bencher;
 
     #[test]
     fn test_esaxx() {
@@ -359,27 +356,27 @@ mod tests {
         assert_eq!(iter.next(), None);
     }
 
-    #[bench]
-    fn bench_esaxx_long(b: &mut Bencher) {
-        let string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.".to_string();
-        b.iter(|| suffix(&string).unwrap());
-    }
+    // #[bench]
+    // fn bench_esaxx_long(b: &mut Bencher) {
+    //     let string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.".to_string();
+    //     b.iter(|| suffix(&string).unwrap());
+    // }
 
-    #[bench]
-    fn bench_esaxx_long2(b: &mut Bencher) {
-        let string = std::fs::read_to_string("data/eighty.txt").unwrap();
-        b.iter(|| suffix(&string).unwrap());
-    }
+    // #[bench]
+    // fn bench_esaxx_long2(b: &mut Bencher) {
+    //     let string = std::fs::read_to_string("data/eighty.txt").unwrap();
+    //     b.iter(|| suffix(&string).unwrap());
+    // }
 
-    #[bench]
-    fn bench_esaxx_rs_long(b: &mut Bencher) {
-        let string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.".to_string();
-        b.iter(|| suffix_rs(&string).unwrap());
-    }
+    // #[bench]
+    // fn bench_esaxx_rs_long(b: &mut Bencher) {
+    //     let string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.".to_string();
+    //     b.iter(|| suffix_rs(&string).unwrap());
+    // }
 
-    #[bench]
-    fn bench_esaxx_rs_long2(b: &mut Bencher) {
-        let string = std::fs::read_to_string("data/eighty.txt").unwrap();
-        b.iter(|| suffix_rs(&string).unwrap());
-    }
+    // #[bench]
+    // fn bench_esaxx_rs_long2(b: &mut Bencher) {
+    //     let string = std::fs::read_to_string("data/eighty.txt").unwrap();
+    //     b.iter(|| suffix_rs(&string).unwrap());
+    // }
 }
