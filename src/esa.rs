@@ -75,7 +75,7 @@ fn suffixtree(
     node_num
 }
 
-pub fn esaxx_rs(
+pub(crate) fn esaxx_rs(
     t: &StringT,
     sa: &mut SArray,
     l: &mut SArray,

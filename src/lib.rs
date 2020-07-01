@@ -13,6 +13,25 @@
 //! assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
 //! assert_eq!(iter.next(), None);
 //! ```
+//!
+//! The previous version uses unsafe optimized c++ code.
+//! There exists another implementation a bit slower (~2x slower) that uses
+//! safe rust. It's a bit slower because it uses usize (mostly 64bit) instead of i32 (32bit).
+//! But it does seems to fix a few OOB issues in the cpp version
+//! (which never seemed to cause real problems in tests but still.)
+//!
+//! ```rust
+//! let string = "abracadabra";
+//! let suffix = esaxx_rs::suffix_rs(string).unwrap();
+//! let chars: Vec<_> = string.chars().collect();
+//! let mut iter = suffix.iter();
+//! assert_eq!(iter.next().unwrap(), (&chars[..4], 2)); // abra
+//! assert_eq!(iter.next(), Some((&chars[..1], 5))); // a
+//! assert_eq!(iter.next(), Some((&chars[1..4], 2))); // bra
+//! assert_eq!(iter.next(), Some((&chars[2..4], 2))); // ra
+//! assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
+//! assert_eq!(iter.next(), None);
+//! ```
 #![feature(test)]
 extern crate test;
 
@@ -21,11 +40,11 @@ mod esa;
 mod sais;
 mod types;
 
-pub use esa::esaxx_rs;
+use esa::esaxx_rs;
 use types::SuffixError;
 
 extern "C" {
-    pub fn esaxx_int32(
+    fn esaxx_int32(
         // This is char32
         T: *const u32,
         SA: *mut i32,
@@ -38,7 +57,7 @@ extern "C" {
     ) -> i32;
 }
 
-pub fn esaxx(
+fn esaxx(
     chars: &[char],
     sa: &mut [i32],
     l: &mut [i32],
@@ -83,6 +102,8 @@ pub struct Suffix<T> {
     node_num: usize,
 }
 
+/// Creates the suffix array and provides an iterator over its items (Rust version)
+/// See [suffix](fn.suffix.html)
 pub fn suffix_rs(string: &str) -> Result<Suffix<usize>, SuffixError> {
     let chars: Vec<_> = string.chars().collect();
     let n = chars.len();
@@ -102,6 +123,22 @@ pub fn suffix_rs(string: &str) -> Result<Suffix<usize>, SuffixError> {
     })
 }
 
+/// Creates the suffix array and provides an iterator over its items (c++ unsafe version)
+///
+/// Gives you an iterator over the suffixes of the input array and their count within
+/// the input srtring.
+/// ```rust
+/// let string = "abracadabra";
+/// let suffix = esaxx_rs::suffix(string).unwrap();
+/// let chars: Vec<_> = string.chars().collect();
+/// let mut iter = suffix.iter();
+/// assert_eq!(iter.next().unwrap(), (&chars[..4], 2)); // abra
+/// assert_eq!(iter.next(), Some((&chars[..1], 5))); // a
+/// assert_eq!(iter.next(), Some((&chars[1..4], 2))); // bra
+/// assert_eq!(iter.next(), Some((&chars[2..4], 2))); // ra
+/// assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
+/// assert_eq!(iter.next(), None);
+/// ```
 pub fn suffix(string: &str) -> Result<Suffix<i32>, SuffixError> {
     let chars: Vec<_> = string.chars().collect();
     let n = chars.len();

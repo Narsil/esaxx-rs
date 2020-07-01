@@ -8,7 +8,7 @@ checksum = "7bbb73db36c1246e9034e307d0fba23f9a2e251faa47ade70c1bd252220c8311"
 
 [[package]]
 name = "esaxx-rs"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "cc",
 ]

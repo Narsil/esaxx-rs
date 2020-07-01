@@ -1,33 +1,25 @@
+![](https://github.com/Narsil/esaxx-rs/workflows/build/badge.svg)
+
 # esaxx-rs
+
+This code implements a fast suffix tree / suffix array.
+
+This code is taken from ![sentencepiece](https://github.com/google/sentencepiece) 
+and to be used by ![hugging face](https://github.com/huggingface/tokenizers/).
+
 
 Small wrapper around sentencepiece's esaxx suffix array C++ library.
 Usage
 
 ```rust
-let string = "abracadabra".to_string();
+let string = "abracadabra";
+let suffix = esaxx_rs::suffix(string).unwrap();
 let chars: Vec<_> = string.chars().collect();
-let n = chars.len();
-let mut sa = vec![0; n];
-let mut l = vec![0; n];
-let mut r = vec![0; n];
-let mut d = vec![0; n];
-let mut node_num = 0;
-
-let alphabet_size = 0x110000; // All UCS4 range.
-unsafe {
-    esaxx_int32(
-        chars.as_ptr() as *mut u32,
-        sa.as_mut_ptr(),
-        l.as_mut_ptr(),
-        r.as_mut_ptr(),
-        d.as_mut_ptr(),
-        n.try_into().unwrap(),
-        alphabet_size,
-        &mut node_num,
-    );
-}
+let mut iter = suffix.iter();
+assert_eq!(iter.next().unwrap(), (&chars[..4], 2)); // abra
+assert_eq!(iter.next(), Some((&chars[..1], 5))); // a
+assert_eq!(iter.next(), Some((&chars[1..4], 2))); // bra
+assert_eq!(iter.next(), Some((&chars[2..4], 2))); // ra
+assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
+assert_eq!(iter.next(), None);
 ```
-
-Current version: 0.1.0
-
-License: Apache
