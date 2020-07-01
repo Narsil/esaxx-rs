@@ -67,25 +67,25 @@ fn suffixtree(
         if i == n {
             break;
         }
-        s.push((i.try_into().unwrap(), (n - suffix_array[i] + 1).try_into().unwrap()));
+        s.push((
+            i.try_into().unwrap(),
+            (n - suffix_array[i] + 1).try_into().unwrap(),
+        ));
         i += 1;
     }
     node_num
 }
 
 pub(crate) fn esaxx_rs(
-    t: &StringT,
-    sa: &mut SArray,
-    l: &mut SArray,
-    r: &mut SArray,
-    d: &mut SArray,
+    string: &StringT,
+    suffix_array: &mut SArray,
+    left: &mut SArray,
+    right: &mut SArray,
+    depth: &mut SArray,
     k: usize,
 ) -> Result<usize, SuffixError> {
-    let n = t.len();
-    if k <= 0 {
-        return Err(SuffixError::InvalidLength);
-    }
-    saisxx(t, sa, n, k)?;
-    let node_num = suffixtree(t, sa, l, r, d, n);
+    let n = string.len();
+    saisxx(string, suffix_array, n, k)?;
+    let node_num = suffixtree(string, suffix_array, left, right, depth, n);
     Ok(node_num)
 }

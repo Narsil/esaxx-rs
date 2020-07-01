@@ -6,12 +6,12 @@ fn has_high_bit(j: usize) -> bool {
 }
 
 // TODO : Parallelize this
-fn get_counts(t: &StringT, c: &mut Bucket, n: usize, k: usize) {
-    for i in 0..k {
-        c[i] = 0;
+fn get_counts(t: &StringT, c: &mut Bucket) {
+    for item in c.iter_mut() {
+        *item = 0;
     }
-    for i in 0..n {
-        c[t[i] as usize] += 1;
+    for character in t {
+        c[*character as usize] += 1;
     }
 }
 
@@ -30,33 +30,40 @@ fn get_buckets(c: &Bucket, b: &mut Bucket, k: usize, end: bool) {
     }
 }
 
-fn induce_sa(t: &StringT, sa: &mut SArray, c: &mut Bucket, b: &mut Bucket, n: usize, k: usize) {
-    assert!(n <= sa.len());
-    get_counts(t, c, n, k);
-    get_buckets(c, b, k, false);
+fn induce_sa(
+    string: &StringT,
+    suffix_array: &mut SArray,
+    counts: &mut Bucket,
+    buckets: &mut Bucket,
+    n: usize,
+    k: usize,
+) {
+    assert!(n <= suffix_array.len());
+    get_counts(string, counts);
+    get_buckets(counts, buckets, k, false);
 
     let mut c0;
     let mut j = n - 1;
-    let mut c1 = t[j] as usize;
-    let mut index = b[c1];
-    sa[index] = if j > 0 && (t[j - 1] as usize) < c1 {
+    let mut c1 = string[j] as usize;
+    let mut index = buckets[c1];
+    suffix_array[index] = if j > 0 && (string[j - 1] as usize) < c1 {
         !j
     } else {
         j
     };
     index += 1;
     for i in 0..n {
-        j = sa[i];
-        sa[i] = !j;
+        j = suffix_array[i];
+        suffix_array[i] = !j;
         if !has_high_bit(j) && j > 0 {
             j -= 1;
-            c0 = t[j] as usize;
+            c0 = string[j] as usize;
             if c0 != c1 {
-                b[c1] = index;
+                buckets[c1] = index;
                 c1 = c0;
-                index = b[c1];
+                index = buckets[c1];
             }
-            sa[index] = if j > 0 && !has_high_bit(j) && (t[j - 1] as usize) < c1 {
+            suffix_array[index] = if j > 0 && !has_high_bit(j) && (string[j - 1] as usize) < c1 {
                 !j
             } else {
                 j
@@ -67,102 +74,102 @@ fn induce_sa(t: &StringT, sa: &mut SArray, c: &mut Bucket, b: &mut Bucket, n: us
 
     // Compute SA
     // XXX: true here.
-    get_counts(t, c, n, k);
-    get_buckets(c, b, k, true);
+    get_counts(string, counts);
+    get_buckets(counts, buckets, k, true);
     c1 = 0;
-    index = b[c1];
+    index = buckets[c1];
     for i in (0..n).rev() {
-        j = sa[i];
+        j = suffix_array[i];
         if j > 0 && !has_high_bit(j) {
             j -= 1;
-            c0 = t[j] as usize;
+            c0 = string[j] as usize;
             if c0 != c1 {
-                b[c1] = index;
+                buckets[c1] = index;
                 c1 = c0;
-                index = b[c1];
+                index = buckets[c1];
             }
             index -= 1;
-            sa[index] = if j == 0 || (t[j - 1] as usize) > c1 {
+            suffix_array[index] = if j == 0 || (string[j - 1] as usize) > c1 {
                 !j
             } else {
                 j
             };
         } else {
-            sa[i] = !j;
+            suffix_array[i] = !j;
         }
     }
 }
 
 fn compute_bwt(
-    t: &StringT,
-    sa: &mut SArray,
-    c: &mut Bucket,
-    b: &mut Bucket,
+    string: &StringT,
+    suffix_array: &mut SArray,
+    counts: &mut Bucket,
+    buckets: &mut Bucket,
     n: usize,
     k: usize,
 ) -> usize {
     // TODO
     let mut pidx = 0;
-    get_counts(t, c, n, k);
-    get_buckets(c, b, k, false);
+    get_counts(string, counts);
+    get_buckets(counts, buckets, k, false);
     let mut j = n - 1;
-    let mut c1 = t[j] as usize;
+    let mut c1 = string[j] as usize;
     let mut c0;
-    let mut index = b[c1];
+    let mut index = buckets[c1];
     // bb = SA + B[c1 = T[j = n - 1]];
     // *bb++ = ((0 < j) && (T[j - 1] < c1)) ? ~j : j;
-    sa[index] = if j > 0 && (t[j - 1] as usize) < c1 {
+    suffix_array[index] = if j > 0 && (string[j - 1] as usize) < c1 {
         !j
     } else {
         j
     };
     index += 1;
     for i in 0..n {
-        j = sa[i];
+        j = suffix_array[i];
         if j > 0 {
             j -= 1;
-            c0 = t[j] as usize;
-            sa[i] = !c0;
+            c0 = string[j] as usize;
+            suffix_array[i] = !c0;
             if c0 != c1 {
-                b[c1] = index;
+                buckets[c1] = index;
                 c1 = c0;
-                index = b[c1];
+                index = buckets[c1];
             }
-            sa[index] = if j > 0 && (t[j - 1] as usize) < c1 {
+            suffix_array[index] = if j > 0 && (string[j - 1] as usize) < c1 {
                 !j
             } else {
                 j
             };
             index += 1;
         } else if j != 0 {
-            sa[i] = !j;
+            suffix_array[i] = !j;
         }
     }
 
     // Compute SA
-    get_counts(t, c, n, k);
-    get_buckets(c, b, k, true);
+    get_counts(string, counts);
+    get_buckets(counts, buckets, k, true);
     c1 = 0;
-    index = b[c1];
+    index = buckets[c1];
     for i in (0..n).rev() {
-        j = sa[i];
+        j = suffix_array[i];
         if j > 0 {
             j -= 1;
-            c0 = t[j] as usize;
-            sa[i] = c0;
+            c0 = string[j] as usize;
+            suffix_array[i] = c0;
             if c0 != c1 {
-                b[c1] = index;
+                buckets[c1] = index;
                 c1 = c0;
-                index = b[c1];
+                index = buckets[c1];
             }
             index -= 1;
-            sa[index] = if j > 0 && (t[j - 1] as usize) > c1 {
-                !(t[j - 1] as usize)
+            suffix_array[index] = if j > 0 && (string[j - 1] as usize) > c1 {
+                !(string[j - 1] as usize)
             } else {
                 j
             };
         } else if j != 0 {
-            sa[i] = !j;
+            suffix_array[i] = !j;
         } else {
             pidx = i
         }
@@ -170,9 +177,10 @@ fn compute_bwt(
     pidx
 }
 
+#[allow(clippy::many_single_char_names)]
 fn suffixsort(
-    t: &StringT,
-    mut sa: &mut SArray,
+    string: &StringT,
+    mut suffix_array: &mut SArray,
     fs: usize,
     n: usize,
     k: usize,
@@ -182,30 +190,30 @@ fn suffixsort(
     let mut c0;
     let mut c1;
 
-    let mut c = vec![0; k];
-    let mut b = vec![0; k];
-    get_counts(t, &mut c, n, k);
-    get_buckets(&mut c, &mut b, k, true);
+    let mut counts = vec![0; k];
+    let mut buckets = vec![0; k];
+    get_counts(string, &mut counts);
+    get_buckets(&counts, &mut buckets, k, true);
     // stage 1:
     // reduce the problem by at least 1/2
     // sort all the S-substrings
-    for i in 0..n {
-        sa[i] = 0;
+    for item in suffix_array.iter_mut() {
+        *item = 0;
     }
     let mut c_index = 0;
-    c1 = t[n - 1] as usize;
+    c1 = string[n - 1] as usize;
     for i in (0..n - 1).rev() {
-        c0 = t[i] as usize;
+        c0 = string[i] as usize;
         if c0 < c1 + c_index {
             c_index = 1;
         } else if c_index != 0 {
-            b[c1] -= 1;
-            sa[b[c1]] = i + 1;
+            buckets[c1] -= 1;
+            suffix_array[buckets[c1]] = i + 1;
             c_index = 0;
         }
         c1 = c0;
     }
-    induce_sa(t, &mut sa, &mut c, &mut b, n, k);
+    induce_sa(string, &mut suffix_array, &mut counts, &mut buckets, n, k);
 
     // compact all the sorted substrings into the first m items of SA
     // 2*m must be not larger than n (proveable)
@@ -215,39 +223,39 @@ fn suffixsort(
     let mut j;
     let mut m = 0;
     for i in 0..n {
-        p = sa[i];
-        c0 = t[p] as usize;
-        if p > 0 && (t[p - 1] as usize) > c0 {
+        p = suffix_array[i];
+        c0 = string[p] as usize;
+        if p > 0 && (string[p - 1] as usize) > c0 {
             // TODO overly complex. But fricking hard to get right.
             j = p + 1;
             if j < n {
-                c1 = t[j] as usize;
+                c1 = string[j] as usize;
             }
             while j < n && c0 == c1 {
                 j += 1;
-                c1 = t[j] as usize;
+                c1 = string[j] as usize;
             }
             if j < n && c0 < c1 {
-                sa[m] = p;
+                suffix_array[m] = p;
                 m += 1;
             }
         }
     }
     j = m + (n >> 1);
-    for i in m..j {
-        sa[i] = 0;
+    for item in suffix_array.iter_mut().take(j).skip(m) {
+        *item = 0;
     }
 
     /* store the length of all substrings */
     j = n;
     let mut c_index = 0;
-    c1 = t[n - 1] as usize;
+    c1 = string[n - 1] as usize;
     for i in (0..n - 1).rev() {
-        c0 = t[i] as usize;
+        c0 = string[i] as usize;
         if c0 < c1 + c_index {
             c_index = 1;
         } else if c_index != 0 {
-            sa[m + ((i + 1) >> 1)] = j - i - 1;
+            suffix_array[m + ((i + 1) >> 1)] = j - i - 1;
             j = i + 1;
             c_index = 0;
         }
@@ -261,12 +269,12 @@ fn suffixsort(
     let mut plen;
     let mut diff;
     for i in 0..m {
-        p = sa[i];
-        plen = sa[m + (p >> 1)];
+        p = suffix_array[i];
+        plen = suffix_array[m + (p >> 1)];
         diff = true;
         if plen == qlen {
             j = 0;
-            while j < plen && t[p + j] == t[q + j] {
+            while j < plen && string[p + j] == string[q + j] {
                 j += 1;
             }
             if j == plen {
@@ -278,7 +286,7 @@ fn suffixsort(
             q = p;
             qlen = plen;
         }
-        sa[m + (p >> 1)] = name;
+        suffix_array[m + (p >> 1)] = name;
     }
     /* stage 2: solve the reduced problem
     recurse if names are not yet unique */
@@ -287,8 +295,8 @@ fn suffixsort(
         j = m - 1;
         let a = m + (n >> 1);
         for i in (m..a).rev() {
-            if sa[i] != 0 {
-                sa[ra_index + j] = sa[i] - 1;
+            if suffix_array[i] != 0 {
+                suffix_array[ra_index + j] = suffix_array[i] - 1;
                 // XXX: Bug underflow caught by Rust yeah (well cpp used i32)
                 if j > 0 {
                     j -= 1;
@@ -297,25 +305,25 @@ fn suffixsort(
         }
         // XXX: Could call transmute on SA to avoid allocation.
         // but it requires unsafe.
-        let ra: Vec<char> = sa
+        let ra: Vec<char> = suffix_array
             .iter()
             .skip(ra_index)
             .take(m)
             .map(|n| char::from_u32(*n as u32).unwrap())
             .collect();
-        suffixsort(&ra, sa, fs + n - m * 2, m, name, false)?;
+        suffixsort(&ra, suffix_array, fs + n - m * 2, m, name, false)?;
         // let ra: &[char] =
         //     unsafe { std::mem::transmute::<&[usize], &[char]>(&sa[ra_index..ra_index + m]) };
         // suffixsort(ra, sa, fs + n - m * 2, m, name, false)?;
         j = m - 1;
         c_index = 0;
-        c1 = t[n - 1] as usize;
+        c1 = string[n - 1] as usize;
         for i in (0..n - 1).rev() {
-            c0 = t[i] as usize;
+            c0 = string[i] as usize;
             if c0 < c1 + c_index {
                 c_index = 1;
             } else if c_index != 0 {
-                sa[ra_index + j] = i + 1;
+                suffix_array[ra_index + j] = i + 1;
                 c_index = 0;
                 if j > 0 {
                     j -= 1; /* get p1 */
@@ -325,46 +333,48 @@ fn suffixsort(
         }
         // get index in s
         for i in 0..m {
-            sa[i] = sa[ra_index + sa[i]];
+            suffix_array[i] = suffix_array[ra_index + suffix_array[i]];
         }
     }
 
     /* stage 3: induce the result for the original problem */
-    let mut c = vec![0; k];
-    let mut b = vec![0; k];
+    let mut counts = vec![0; k];
+    let mut buckets = vec![0; k];
     /* put all left-most S characters into their buckets */
-    get_counts(t, &mut c, n, k);
-    get_buckets(&mut c, &mut b, k, true);
-    for i in m..n {
-        sa[i] = 0;
+    get_counts(string, &mut counts);
+    get_buckets(&counts, &mut buckets, k, true);
+    for item in suffix_array.iter_mut().take(n).skip(m) {
+        *item = 0;
     }
     for i in (0..m).rev() {
-        j = sa[i];
-        sa[i] = 0;
-        if b[t[j] as usize] > 0 {
-            b[t[j] as usize] -= 1;
-            sa[b[t[j] as usize]] = j;
+        j = suffix_array[i];
+        suffix_array[i] = 0;
+        if buckets[string[j] as usize] > 0 {
+            buckets[string[j] as usize] -= 1;
+            suffix_array[buckets[string[j] as usize]] = j;
         }
     }
     if is_bwt {
-        pidx = compute_bwt(t, &mut sa, &mut c, &mut b, n, k);
+        pidx = compute_bwt(string, &mut suffix_array, &mut counts, &mut buckets, n, k);
     } else {
-        induce_sa(t, &mut sa, &mut c, &mut b, n, k);
+        induce_sa(string, &mut suffix_array, &mut counts, &mut buckets, n, k);
     }
 
     Ok(pidx)
 }
 
-pub fn saisxx(t: &StringT, mut sa: &mut SArray, n: usize, k: usize) -> Result<(), SuffixError> {
-    if k <= 0 {
-        return Err(SuffixError::InvalidLength);
-    }
+pub fn saisxx(
+    string: &StringT,
+    mut suffix_array: &mut SArray,
+    n: usize,
+    k: usize,
+) -> Result<(), SuffixError> {
     if n == 1 {
-        sa[0] = 0;
+        suffix_array[0] = 0;
         return Ok(());
     }
     let fs = 0;
-    suffixsort(t, &mut sa, fs, n, k, false)?;
+    suffixsort(string, &mut suffix_array, fs, n, k, false)?;
     Ok(())
 }
 fn _saisxx_bwt(
@@ -374,9 +384,6 @@ fn _saisxx_bwt(
     n: usize,
     k: usize,
 ) -> Result<usize, SuffixError> {
-    if k <= 0 {
-        return Err(SuffixError::InvalidLength);
-    }
     if n <= 1 {
         if n == 1 {
             u[0] = t[0];
