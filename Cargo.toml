@@ -16,3 +16,10 @@ readme = "README.md"
 
 [build-dependencies]
 cc = "1.0"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "bench_suffix"
+harness = false
