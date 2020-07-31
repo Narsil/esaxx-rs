@@ -5,30 +5,22 @@ fn has_high_bit(j: usize) -> bool {
 }
 
 fn get_counts(t: &StringT, c: &mut Bucket) {
-    c.iter_mut().map(|c| *c = 0).count();
-    t.iter()
-        .map(|character| c[*character as usize] += 1)
-        .count();
+    c.iter_mut().for_each(|c| *c = 0);
+    t.iter().for_each(|character| c[*character as usize] += 1);
 }
 
 fn get_buckets(c: &Bucket, b: &mut Bucket, _k: usize, end: bool) {
     let mut sum = 0;
     if end {
-        b.iter_mut()
-            .enumerate()
-            .map(|(i, b_el)| {
-                sum += c[i];
-                *b_el = sum;
-            })
-            .count();
+        b.iter_mut().enumerate().for_each(|(i, b_el)| {
+            sum += c[i];
+            *b_el = sum;
+        });
     } else {
-        b.iter_mut()
-            .enumerate()
-            .map(|(i, b_el)| {
-                *b_el = sum;
-                sum += c[i];
-            })
-            .count();
+        b.iter_mut().enumerate().for_each(|(i, b_el)| {
+            *b_el = sum;
+            sum += c[i];
+        });
     }
 }
 
