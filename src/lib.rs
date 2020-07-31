@@ -110,7 +110,14 @@ pub fn suffix_rs(string: &str) -> Result<Suffix<usize>, SuffixError> {
     let mut r = vec![0; n];
     let mut d = vec![0; n];
     let alphabet_size = 0x110000; // All UCS4 range.
-    let node_num = esaxx_rs(&chars, &mut sa, &mut l, &mut r, &mut d, alphabet_size)?;
+    let node_num = esaxx_rs(
+        &chars.iter().map(|c| *c as u32).collect::<Vec<_>>(),
+        &mut sa,
+        &mut l,
+        &mut r,
+        &mut d,
+        alphabet_size,
+    )?;
     Ok(Suffix {
         chars,
         sa,
@@ -277,7 +284,7 @@ mod tests {
     #[test]
     fn test_esaxx_rs() {
         let string = "abracadabra".to_string();
-        let chars: Vec<_> = string.chars().collect();
+        let chars: Vec<_> = string.chars().map(|c| c as u32).collect();
         let n = chars.len();
         let mut sa = vec![0; n];
         let mut l = vec![0; n];
@@ -301,7 +308,7 @@ mod tests {
     #[test]
     fn test_esaxx_rs_long() {
         let string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.".to_string();
-        let chars: Vec<_> = string.chars().collect();
+        let chars: Vec<_> = string.chars().map(|c| c as u32).collect();
         let n = chars.len();
         let mut sa = vec![0; n];
         let mut l = vec![0; n];

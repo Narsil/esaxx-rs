@@ -1,11 +1,9 @@
 use crate::types::{Bucket, SArray, StringT, SuffixError};
-use std::char;
 
 fn has_high_bit(j: usize) -> bool {
     j > usize::MAX / 2
 }
 
-// TODO : Parallelize this
 fn get_counts(t: &StringT, c: &mut Bucket) {
     for item in c.iter_mut() {
         *item = 0;
@@ -305,11 +303,11 @@ fn suffixsort(
         }
         // XXX: Could call transmute on SA to avoid allocation.
         // but it requires unsafe.
-        let ra: Vec<char> = suffix_array
+        let ra: Vec<u32> = suffix_array
             .iter()
             .skip(ra_index)
             .take(m)
-            .map(|n| char::from_u32(*n as u32).unwrap())
+            .map(|n| *n as u32)
             .collect();
         suffixsort(&ra, suffix_array, fs + n - m * 2, m, name, false)?;
         // let ra: &[char] =
@@ -338,8 +336,6 @@ fn suffixsort(
     }
 
     /* stage 3: induce the result for the original problem */
-    let mut counts = vec![0; k];
-    let mut buckets = vec![0; k];
     /* put all left-most S characters into their buckets */
     get_counts(string, &mut counts);
     get_buckets(&counts, &mut buckets, k, true);
@@ -393,10 +389,10 @@ fn _saisxx_bwt(
     let mut pidx = suffixsort(t, sa, 0, n, k, true)?;
     u[0] = t[n - 1];
     for i in 0..pidx {
-        u[i + 1] = char::from_u32(sa[i] as u32).unwrap(); // cast to char
+        u[i + 1] = sa[i] as u32;
     }
     for i in pidx + 1..n {
-        u[i] = char::from_u32(sa[i] as u32).unwrap();
+        u[i] = sa[i] as u32
     }
     pidx += 1;
     Ok(pidx)
@@ -408,7 +404,7 @@ mod tests {
 
     #[test]
     fn test_induce_sa() {
-        let chars: Vec<_> = "abracadabra".chars().collect();
+        let chars: Vec<_> = "abracadabra".chars().map(|c| c as u32).collect();
         let mut c = vec![0; 256];
         let mut b = vec![0; 256];
 
@@ -424,7 +420,7 @@ mod tests {
     #[test]
     fn test_induce_sa_long() {
         let string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.".to_string();
-        let chars: Vec<_> = string.chars().collect();
+        let chars: Vec<_> = string.chars().map(|c| c as u32).collect();
         let mut c = vec![0; 256];
         let mut b = vec![0; 256];
         let mut sa = vec![
