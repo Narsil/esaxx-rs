@@ -362,4 +362,10 @@ mod tests {
         assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
         assert_eq!(iter.next(), None);
     }
+
+    #[test]
+    fn test_out_of_bounds_bug() {
+        let string = "banana$band$$";
+        suffix_rs(&string).unwrap();
+    }
 }
