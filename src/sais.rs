@@ -226,8 +226,8 @@ fn suffixsort(
                 c1 = string[j] as usize;
             }
             while j < n && c0 == c1 {
-                j += 1;
                 c1 = string[j] as usize;
+                j += 1;
             }
             if j < n && c0 < c1 {
                 suffix_array[m] = p;
