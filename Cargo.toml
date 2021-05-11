@@ -13,6 +13,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+openmp-sys = "1.2"
 
 [build-dependencies]
 cc = "1.0"

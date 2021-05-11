@@ -33,6 +33,8 @@
 //! assert_eq!(iter.next(), None);
 //! ```
 
+extern crate openmp_sys;
+
 use std::convert::TryInto;
 mod esa;
 mod sais;
