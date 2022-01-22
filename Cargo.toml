@@ -20,6 +20,9 @@ cc = "1.0"
 [dev-dependencies]
 criterion = "0.3"
 
+[features]
+unsafe = []
+
 [[bench]]
 name = "bench_suffix"
 harness = false

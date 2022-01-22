@@ -1,9 +1,9 @@
-pub type Bucket = [usize];
+pub type Bucket = [u32];
 /// We need to use u32  instead of char, because when we recurse
 /// we use  suffix array elements as ways to replace our original
 /// string. Using chars can fail. Look for ra variable.
 pub type StringT = [u32];
-pub type SArray = [usize];
+pub type SArray = [u32];
 
 #[derive(Debug)]
 pub enum SuffixError {
