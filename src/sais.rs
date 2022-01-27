@@ -13,33 +13,19 @@ pub fn get_counts(t: &StringT, c: &mut Bucket, n: u32, k: u32) {
     }
 }
 
-// pub fn get_counts2(t: &StringT, c: &mut Bucket, n: u32, k: u32) {
-//     //assert!(n <= t.len() && k <= c.len());
-//     // for i in 0..(k as usize) {
-//     //     c[i] = 0;
-//     // }
-//     c.iter_mut().take(k as usize).for_each(|c| *c = 0);
-//     for i in 0..(n as usize) {
-//         c[t[i as usize] as usize] += 1;
-//     }
-//     // t.iter()
-//     //     .take(n as usize)
-//     //     .for_each(|&character| c[character as usize] += 1);
-// }
-
 fn get_buckets(c: &Bucket, b: &mut Bucket, k: u32, end: bool) {
     let mut sum = 0;
     let k = k as usize;
     if end {
-        b.iter_mut().zip(c.iter()).take(k).for_each(|(b_el, c_el)| {
-            sum += c_el;
-            *b_el = sum;
-        });
+        for i in 0..k {
+            sum += c[i];
+            b[i] = sum;
+        }
     } else {
-        b.iter_mut().zip(c.iter()).take(k).for_each(|(b_el, c_el)| {
-            *b_el = sum;
-            sum += c_el;
-        });
+        for i in 0..k {
+            b[i] = sum;
+            sum += c[i];
+        }
     }
 }
 
