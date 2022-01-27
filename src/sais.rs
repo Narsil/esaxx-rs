@@ -4,22 +4,41 @@ fn has_high_bit(j: u32) -> bool {
     j > u32::MAX / 2
 }
 
-fn get_counts(t: &StringT, c: &mut Bucket) {
-    c.iter_mut().for_each(|c| *c = 0);
-    t.iter().for_each(|character| c[*character as usize] += 1);
+pub fn get_counts(t: &StringT, c: &mut Bucket, n: u32, k: u32) {
+    let k = k as usize;
+    let n = n as usize;
+    c.iter_mut().take(k).for_each(|c| *c = 0);
+    for i in 0..(n as usize) {
+        c[t[i as usize] as usize] += 1;
+    }
 }
 
-fn get_buckets(c: &Bucket, b: &mut Bucket, _k: u32, end: bool) {
+// pub fn get_counts2(t: &StringT, c: &mut Bucket, n: u32, k: u32) {
+//     //assert!(n <= t.len() && k <= c.len());
+//     // for i in 0..(k as usize) {
+//     //     c[i] = 0;
+//     // }
+//     c.iter_mut().take(k as usize).for_each(|c| *c = 0);
+//     for i in 0..(n as usize) {
+//         c[t[i as usize] as usize] += 1;
+//     }
+//     // t.iter()
+//     //     .take(n as usize)
+//     //     .for_each(|&character| c[character as usize] += 1);
+// }
+
+fn get_buckets(c: &Bucket, b: &mut Bucket, k: u32, end: bool) {
     let mut sum = 0;
+    let k = k as usize;
     if end {
-        b.iter_mut().enumerate().for_each(|(i, b_el)| {
-            sum += c[i];
+        b.iter_mut().zip(c.iter()).take(k).for_each(|(b_el, c_el)| {
+            sum += c_el;
             *b_el = sum;
         });
     } else {
-        b.iter_mut().enumerate().for_each(|(i, b_el)| {
+        b.iter_mut().zip(c.iter()).take(k).for_each(|(b_el, c_el)| {
             *b_el = sum;
-            sum += c[i];
+            sum += c_el;
         });
     }
 }
@@ -33,7 +52,7 @@ fn induce_sa(
     k: u32,
 ) {
     assert!(n <= suffix_array.len() as u32);
-    get_counts(string, counts);
+    get_counts(string, counts, n, k);
     get_buckets(counts, buckets, k, false);
 
     let mut c0;
@@ -69,7 +88,7 @@ fn induce_sa(
 
     // Compute SA
     // XXX: true here.
-    get_counts(string, counts);
+    get_counts(string, counts, n, k);
     get_buckets(counts, buckets, k, true);
     c1 = 0;
     index = buckets[c1 as usize];
@@ -105,7 +124,7 @@ fn compute_bwt(
 ) -> u32 {
     // TODO
     let mut pidx = 0;
-    get_counts(string, counts);
+    get_counts(string, counts, n, k);
     get_buckets(counts, buckets, k, false);
     let mut j = n - 1;
     let mut c1 = string[j as usize] as u32;
@@ -142,7 +161,7 @@ fn compute_bwt(
     }
 
     // Compute SA
-    get_counts(string, counts);
+    get_counts(string, counts, n, k);
     get_buckets(counts, buckets, k, true);
     c1 = 0;
     index = buckets[c1 as usize] as usize;
@@ -176,6 +195,8 @@ fn compute_bwt(
 fn suffixsort(
     string: &StringT,
     suffix_array: &mut SArray,
+    counts: &mut Bucket,
+    buckets: &mut Bucket,
     fs: u32,
     n: u32,
     k: u32,
@@ -184,10 +205,8 @@ fn suffixsort(
     let mut pidx = 0;
     let mut c0;
 
-    let mut counts = vec![0; k as usize];
-    let mut buckets = vec![0; k as usize];
-    get_counts(string, &mut counts);
-    get_buckets(&counts, &mut buckets, k, true);
+    get_counts(string, counts, n, k);
+    get_buckets(&counts, buckets, k, true);
     // stage 1:
     // reduce the problem by at least 1/2
     // sort all the S-substrings
@@ -209,7 +228,7 @@ fn suffixsort(
         }
         c1 = c0;
     }
-    induce_sa(string, suffix_array, &mut counts, &mut buckets, n, k);
+    induce_sa(string, suffix_array, counts, buckets, n, k);
 
     // compact all the sorted substrings into the first m items of SA
     // 2*m must be not larger than n (proveable)
@@ -318,6 +337,8 @@ fn suffixsort(
         suffixsort(
             &ra,
             suffix_array,
+            counts,
+            buckets,
             fs + n - (m as u32) * 2,
             m as u32,
             name,
@@ -347,8 +368,8 @@ fn suffixsort(
 
     /* stage 3: induce the result for the original problem */
     /* put all left-most S characters into their buckets */
-    get_counts(string, &mut counts);
-    get_buckets(&counts, &mut buckets, k, true);
+    get_counts(string, counts, n, k);
+    get_buckets(&counts, buckets, k, true);
     for item in suffix_array.iter_mut().take(n as usize).skip(m) {
         *item = 0;
     }
@@ -361,9 +382,9 @@ fn suffixsort(
         }
     }
     if is_bwt {
-        pidx = compute_bwt(string, suffix_array, &mut counts, &mut buckets, n, k);
+        pidx = compute_bwt(string, suffix_array, counts, buckets, n, k);
     } else {
-        induce_sa(string, suffix_array, &mut counts, &mut buckets, n, k);
+        induce_sa(string, suffix_array, counts, buckets, n, k);
     }
 
     Ok(pidx)
@@ -380,7 +401,18 @@ pub fn saisxx(
         return Ok(());
     }
     let fs = 0;
-    suffixsort(string, suffix_array, fs, n, k, false)?;
+    let mut counts = vec![0; k as usize];
+    let mut buckets = vec![0; k as usize];
+    suffixsort(
+        string,
+        suffix_array,
+        &mut counts,
+        &mut buckets,
+        fs,
+        n,
+        k,
+        false,
+    )?;
     Ok(())
 }
 fn _saisxx_bwt(
@@ -396,7 +428,9 @@ fn _saisxx_bwt(
         }
         return Ok(n);
     }
-    let mut pidx = suffixsort(t, sa, 0, n, k, true)?;
+    let mut counts = vec![0; k as usize];
+    let mut buckets = vec![0; k as usize];
+    let mut pidx = suffixsort(t, sa, &mut counts, &mut buckets, 0, n, k, true)?;
     u[0] = t[(n - 1) as usize];
     for i in 0..pidx {
         u[(i + 1) as usize] = sa[i as usize] as u32;

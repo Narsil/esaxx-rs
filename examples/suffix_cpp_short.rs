@@ -5,6 +5,8 @@ fn main() {
     let string = std::fs::read_to_string("data/eighty.txt").unwrap();
 
     let start = Instant::now();
-    let s = suffix(&string).unwrap().iter().count();
-    println!("{:?} {:?}", s, start.elapsed());
+    for i in 0..100 {
+        let s = suffix(&string).unwrap().iter().count();
+    }
+    println!("{:?} ", start.elapsed());
 }

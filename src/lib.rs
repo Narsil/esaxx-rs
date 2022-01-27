@@ -35,7 +35,7 @@
 
 use std::convert::TryInto;
 mod esa;
-mod sais;
+pub mod sais;
 mod types;
 
 use esa::esaxx_rs;
@@ -53,6 +53,22 @@ extern "C" {
         k: u32,
         nodeNum: &mut u32,
     ) -> i32;
+
+    #[cfg(feature = "bench")]
+    fn get_counts_int32(
+        // This is char32
+        T: *const u32,
+        C: *mut u32,
+        n: u32,
+        k: u32,
+    );
+}
+
+#[cfg(feature = "bench")]
+pub fn get_counts_cpp(t: &[u32], c: &mut [u32], n: u32, k: u32) {
+    unsafe {
+        get_counts_int32(t.as_ptr() as *const u32, c.as_mut_ptr() as *mut u32, n, k);
+    }
 }
 
 fn esaxx(

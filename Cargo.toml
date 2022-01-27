@@ -22,7 +22,12 @@ criterion = "0.3"
 
 [features]
 unsafe = []
+bench = []
 
 [[bench]]
 name = "bench_suffix"
+harness = false
+
+[[bench]]
+name = "bench_get_counts"
 harness = false
