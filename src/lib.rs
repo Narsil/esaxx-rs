@@ -2,6 +2,8 @@
 //! Usage
 //!
 //! ```rust
+//! #[cfg(feature="cpp")]
+//! {
 //! let string = "abracadabra";
 //! let suffix = esaxx_rs::suffix(string).unwrap();
 //! let chars: Vec<_> = string.chars().collect();
@@ -12,6 +14,7 @@
 //! assert_eq!(iter.next(), Some((&chars[2..4], 2))); // ra
 //! assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
 //! assert_eq!(iter.next(), None);
+//! }
 //! ```
 //!
 //! The previous version uses unsafe optimized c++ code.
@@ -41,6 +44,7 @@ mod types;
 use esa::esaxx_rs;
 use types::SuffixError;
 
+#[cfg(feature = "cc")]
 extern "C" {
     fn esaxx_int32(
         // This is char32
@@ -55,6 +59,7 @@ extern "C" {
     ) -> i32;
 }
 
+#[cfg(feature = "cc")]
 fn esaxx(
     chars: &[char],
     sa: &mut [i32],
@@ -144,6 +149,7 @@ pub fn suffix_rs(string: &str) -> Result<Suffix<usize>, SuffixError> {
 /// assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
 /// assert_eq!(iter.next(), None);
 /// ```
+#[cfg(feature = "cpp")]
 pub fn suffix(string: &str) -> Result<Suffix<i32>, SuffixError> {
     let chars: Vec<_> = string.chars().collect();
     let n = chars.len();
@@ -219,7 +225,8 @@ impl<'a> Iterator for SuffixIterator<'a, usize> {
 }
 
 #[cfg(test)]
-mod tests {
+#[cfg(feature = "cpp")]
+mod cpp_tests {
     use super::*;
 
     #[test]
@@ -282,6 +289,30 @@ mod tests {
     }
 
     #[test]
+    fn test_suffix() {
+        let suffix = suffix("abracadabra").unwrap();
+        assert_eq!(suffix.node_num, 5);
+        assert_eq!(suffix.sa, vec![10, 7, 0, 3, 5, 8, 1, 4, 6, 9, 2]);
+        assert_eq!(suffix.l, vec![1, 0, 5, 9, 0, 0, 3, 0, 0, 0, 2]);
+        assert_eq!(suffix.r, vec![3, 5, 7, 11, 11, 1, 0, 1, 0, 0, 0]);
+        assert_eq!(suffix.d, vec![4, 1, 3, 2, 0, 0, 0, 0, 0, 0, 0]);
+
+        let mut iter = suffix.iter();
+        let chars: Vec<_> = "abracadabra".chars().collect();
+        assert_eq!(iter.next(), Some((&chars[..4], 2))); // abra
+        assert_eq!(iter.next(), Some((&chars[..1], 5))); // a
+        assert_eq!(iter.next(), Some((&chars[1..4], 2))); // bra
+        assert_eq!(iter.next(), Some((&chars[2..4], 2))); // ra
+        assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
+        assert_eq!(iter.next(), None);
+    }
+}
+
+#[cfg(test)]
+mod rs_tests {
+    use super::*;
+
+    #[test]
     fn test_esaxx_rs() {
         let string = "abracadabra".to_string();
         let chars: Vec<_> = string.chars().map(|c| c as u32).collect();
@@ -323,25 +354,6 @@ mod tests {
         // assert_eq!(l, vec![1, 0, 5, 9, 0, 0, 3, 0, 0, 0, 2]);
         // assert_eq!(r, vec![3, 5, 7, 11, 11, 1, 0, 1, 0, 0, 0]);
         // assert_eq!(d, vec![4, 1, 3, 2, 0, 0, 0, 0, 0, 0, 0]);
-    }
-
-    #[test]
-    fn test_suffix() {
-        let suffix = suffix("abracadabra").unwrap();
-        assert_eq!(suffix.node_num, 5);
-        assert_eq!(suffix.sa, vec![10, 7, 0, 3, 5, 8, 1, 4, 6, 9, 2]);
-        assert_eq!(suffix.l, vec![1, 0, 5, 9, 0, 0, 3, 0, 0, 0, 2]);
-        assert_eq!(suffix.r, vec![3, 5, 7, 11, 11, 1, 0, 1, 0, 0, 0]);
-        assert_eq!(suffix.d, vec![4, 1, 3, 2, 0, 0, 0, 0, 0, 0, 0]);
-
-        let mut iter = suffix.iter();
-        let chars: Vec<_> = "abracadabra".chars().collect();
-        assert_eq!(iter.next(), Some((&chars[..4], 2))); // abra
-        assert_eq!(iter.next(), Some((&chars[..1], 5))); // a
-        assert_eq!(iter.next(), Some((&chars[1..4], 2))); // bra
-        assert_eq!(iter.next(), Some((&chars[2..4], 2))); // ra
-        assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
-        assert_eq!(iter.next(), None);
     }
 
     #[test]
