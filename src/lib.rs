@@ -67,7 +67,7 @@ fn esaxx(
     r: &mut [i32],
     d: &mut [i32],
     alphabet_size: u32,
-    mut node_num: &mut u32,
+    node_num: &mut u32,
 ) -> Result<(), SuffixError> {
     let n = chars.len();
     if sa.len() != n || l.len() != n || r.len() != n || d.len() != n {
@@ -82,7 +82,7 @@ fn esaxx(
             d.as_mut_ptr(),
             n.try_into().unwrap(),
             alphabet_size,
-            &mut node_num,
+            node_num,
         );
         if err != 0 {
             return Err(SuffixError::Internal);

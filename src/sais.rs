@@ -174,7 +174,7 @@ fn compute_bwt(
 #[allow(clippy::many_single_char_names)]
 fn suffixsort(
     string: &StringT,
-    mut suffix_array: &mut SArray,
+    suffix_array: &mut SArray,
     fs: usize,
     n: usize,
     k: usize,
@@ -182,7 +182,6 @@ fn suffixsort(
 ) -> Result<usize, SuffixError> {
     let mut pidx = 0;
     let mut c0;
-    let mut c1;
 
     let mut counts = vec![0; k];
     let mut buckets = vec![0; k];
@@ -195,7 +194,7 @@ fn suffixsort(
         *item = 0;
     }
     let mut c_index = 0;
-    c1 = string[n - 1] as usize;
+    let mut c1 = string[n - 1] as usize;
     for i in (0..n - 1).rev() {
         c0 = string[i] as usize;
         if c0 < c1 + c_index {
@@ -207,7 +206,7 @@ fn suffixsort(
         }
         c1 = c0;
     }
-    induce_sa(string, &mut suffix_array, &mut counts, &mut buckets, n, k);
+    induce_sa(string, suffix_array, &mut counts, &mut buckets, n, k);
 
     // compact all the sorted substrings into the first m items of SA
     // 2*m must be not larger than n (proveable)
@@ -347,9 +346,9 @@ fn suffixsort(
         }
     }
     if is_bwt {
-        pidx = compute_bwt(string, &mut suffix_array, &mut counts, &mut buckets, n, k);
+        pidx = compute_bwt(string, suffix_array, &mut counts, &mut buckets, n, k);
     } else {
-        induce_sa(string, &mut suffix_array, &mut counts, &mut buckets, n, k);
+        induce_sa(string, suffix_array, &mut counts, &mut buckets, n, k);
     }
 
     Ok(pidx)
@@ -357,7 +356,7 @@ fn suffixsort(
 
 pub fn saisxx(
     string: &StringT,
-    mut suffix_array: &mut SArray,
+    suffix_array: &mut SArray,
     n: usize,
     k: usize,
 ) -> Result<(), SuffixError> {
@@ -366,7 +365,7 @@ pub fn saisxx(
         return Ok(());
     }
     let fs = 0;
-    suffixsort(string, &mut suffix_array, fs, n, k, false)?;
+    suffixsort(string, suffix_array, fs, n, k, false)?;
     Ok(())
 }
 fn _saisxx_bwt(
