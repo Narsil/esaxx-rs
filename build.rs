@@ -1,3 +1,4 @@
+#[cfg(feature = "cpp")]
 fn main() {
     cc::Build::new()
         .cpp(true)
@@ -7,3 +8,6 @@ fn main() {
         .include("src")
         .compile("esaxx");
 }
+
+#[cfg(not(feature = "cpp"))]
+fn main() {}
