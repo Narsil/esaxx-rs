@@ -27,3 +27,7 @@ cpp = ["cc"]
 [[bench]]
 name = "bench_suffix"
 harness = false
+
+[[example]]
+name = "esaxx"
+required-features = ["cpp"]
