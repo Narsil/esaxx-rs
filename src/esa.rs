@@ -29,9 +29,7 @@ fn suffixtree(
             h += 1;
         }
         right[i] = h;
-        if h > 0 {
-            h -= 1;
-        }
+        h = h.saturating_sub(1);
     }
 
     // H = l
