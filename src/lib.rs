@@ -378,6 +378,6 @@ mod rs_tests {
     #[test]
     fn test_out_of_bounds_bug() {
         let string = "banana$band$$";
-        suffix_rs(&string).unwrap();
+        suffix_rs(string).unwrap();
     }
 }

@@ -291,9 +291,7 @@ fn suffixsort(
             if suffix_array[i] != 0 {
                 suffix_array[ra_index + j] = suffix_array[i] - 1;
                 // XXX: Bug underflow caught by Rust yeah (well cpp used i32)
-                if j > 0 {
-                    j -= 1;
-                }
+                j = j.saturating_sub(1);
             }
         }
         // XXX: Could call transmute on SA to avoid allocation.
@@ -318,9 +316,7 @@ fn suffixsort(
             } else if c_index != 0 {
                 suffix_array[ra_index + j] = i + 1;
                 c_index = 0;
-                if j > 0 {
-                    j -= 1; /* get p1 */
-                }
+                j = j.saturating_sub(1);
             }
             c1 = c0;
         }
