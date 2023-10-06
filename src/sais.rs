@@ -11,14 +11,14 @@ fn get_counts(t: &StringT, c: &mut Bucket) {
 fn get_buckets(c: &Bucket, b: &mut Bucket, end: bool) {
     let mut sum = 0;
     if end {
-        b.iter_mut().enumerate().for_each(|(i, b_el)| {
-            sum += c[i];
+        c.iter().zip(b.iter_mut()).for_each(|(&c_el, b_el)| {
+            sum += c_el;
             *b_el = sum;
         });
     } else {
-        b.iter_mut().enumerate().for_each(|(i, b_el)| {
+        c.iter().zip(b.iter_mut()).for_each(|(&c_el, b_el)| {
             *b_el = sum;
-            sum += c[i];
+            sum += c_el;
         });
     }
 }
