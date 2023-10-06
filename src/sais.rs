@@ -5,7 +5,7 @@ fn has_high_bit(j: usize) -> bool {
 }
 
 fn get_counts(t: &StringT, c: &mut Bucket) {
-    c.iter_mut().for_each(|c| *c = 0);
+    c.fill(0);
     t.iter().for_each(|character| c[*character as usize] += 1);
 }
 fn get_buckets(c: &Bucket, b: &mut Bucket, end: bool) {
@@ -187,9 +187,7 @@ fn suffixsort(
     // stage 1:
     // reduce the problem by at least 1/2
     // sort all the S-substrings
-    for item in suffix_array.iter_mut() {
-        *item = 0;
-    }
+    suffix_array.fill(0);
     let mut c_index = 0;
     let mut c1 = string[n - 1] as usize;
     for i in (0..n - 1).rev() {
