@@ -107,6 +107,21 @@ pub struct Suffix<T> {
 
 /// Creates the suffix array and provides an iterator over its items (Rust version)
 /// See [suffix](fn.suffix.html)
+/// 
+/// Gives you an iterator over the suffixes of the input array and their count within
+/// the input string.
+/// ```rust
+/// let string = "abracadabra";
+/// let suffix = esaxx_rs::suffix_rs(string).unwrap();
+/// let chars: Vec<_> = string.chars().collect();
+/// let mut iter = suffix.iter();
+/// assert_eq!(iter.next().unwrap(), (&chars[..4], 2)); // abra
+/// assert_eq!(iter.next(), Some((&chars[..1], 5))); // a
+/// assert_eq!(iter.next(), Some((&chars[1..4], 2))); // bra
+/// assert_eq!(iter.next(), Some((&chars[2..4], 2))); // ra
+/// assert_eq!(iter.next(), Some((&chars[..0], 11))); // ''
+/// assert_eq!(iter.next(), None);
+/// ```
 pub fn suffix_rs(string: &str) -> Result<Suffix<usize>, SuffixError> {
     let chars: Vec<_> = string.chars().collect();
     let n = chars.len();
@@ -136,7 +151,7 @@ pub fn suffix_rs(string: &str) -> Result<Suffix<usize>, SuffixError> {
 /// Creates the suffix array and provides an iterator over its items (c++ unsafe version)
 ///
 /// Gives you an iterator over the suffixes of the input array and their count within
-/// the input srtring.
+/// the input string.
 /// ```rust
 /// let string = "abracadabra";
 /// let suffix = esaxx_rs::suffix(string).unwrap();
