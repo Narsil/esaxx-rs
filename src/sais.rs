@@ -1,14 +1,13 @@
 use crate::types::{Bucket, SArray, StringT, SuffixError};
 
 fn has_high_bit(j: usize) -> bool {
-    j > usize::MAX / 2
+    (0x0001usize & j.reverse_bits()) == 1
 }
 
 fn get_counts(t: &StringT, c: &mut Bucket) {
     c.iter_mut().for_each(|c| *c = 0);
     t.iter().for_each(|character| c[*character as usize] += 1);
 }
-
 fn get_buckets(c: &Bucket, b: &mut Bucket, end: bool) {
     let mut sum = 0;
     if end {
