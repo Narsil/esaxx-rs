@@ -30,7 +30,7 @@ fn induce_sa(
     buckets: &mut Bucket,
     n: usize,
 ) {
-    assert!(n <= suffix_array.len());
+    debug_assert!(n <= suffix_array.len());
     get_counts(string, counts);
     get_buckets(counts, buckets, false);
 
