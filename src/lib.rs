@@ -107,7 +107,7 @@ pub struct Suffix<T> {
 
 /// Creates the suffix array and provides an iterator over its items (Rust version)
 /// See [suffix](fn.suffix.html)
-/// 
+///
 /// Gives you an iterator over the suffixes of the input array and their count within
 /// the input string.
 /// ```rust
