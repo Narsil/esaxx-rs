@@ -9,7 +9,7 @@ fn get_counts(t: &StringT, c: &mut Bucket) {
     t.iter().for_each(|character| c[*character as usize] += 1);
 }
 
-fn get_buckets(c: &Bucket, b: &mut Bucket, _k: usize, end: bool) {
+fn get_buckets(c: &Bucket, b: &mut Bucket, end: bool) {
     let mut sum = 0;
     if end {
         b.iter_mut().enumerate().for_each(|(i, b_el)| {
@@ -30,11 +30,10 @@ fn induce_sa(
     counts: &mut Bucket,
     buckets: &mut Bucket,
     n: usize,
-    k: usize,
 ) {
     assert!(n <= suffix_array.len());
     get_counts(string, counts);
-    get_buckets(counts, buckets, k, false);
+    get_buckets(counts, buckets, false);
 
     let mut c0;
     let mut j = n - 1;
@@ -69,7 +68,7 @@ fn induce_sa(
     // Compute SA
     // XXX: true here.
     get_counts(string, counts);
-    get_buckets(counts, buckets, k, true);
+    get_buckets(counts, buckets, true);
     c1 = 0;
     index = buckets[c1];
     for i in (0..n).rev() {
@@ -100,12 +99,11 @@ fn compute_bwt(
     counts: &mut Bucket,
     buckets: &mut Bucket,
     n: usize,
-    k: usize,
 ) -> usize {
     // TODO
     let mut pidx = 0;
     get_counts(string, counts);
-    get_buckets(counts, buckets, k, false);
+    get_buckets(counts, buckets, false);
     let mut j = n - 1;
     let mut c1 = string[j] as usize;
     let mut c0;
@@ -142,7 +140,7 @@ fn compute_bwt(
 
     // Compute SA
     get_counts(string, counts);
-    get_buckets(counts, buckets, k, true);
+    get_buckets(counts, buckets, true);
     c1 = 0;
     index = buckets[c1];
     for i in (0..n).rev() {
@@ -186,7 +184,7 @@ fn suffixsort(
     let mut counts = vec![0; k];
     let mut buckets = vec![0; k];
     get_counts(string, &mut counts);
-    get_buckets(&counts, &mut buckets, k, true);
+    get_buckets(&counts, &mut buckets, true);
     // stage 1:
     // reduce the problem by at least 1/2
     // sort all the S-substrings
@@ -206,7 +204,7 @@ fn suffixsort(
         }
         c1 = c0;
     }
-    induce_sa(string, suffix_array, &mut counts, &mut buckets, n, k);
+    induce_sa(string, suffix_array, &mut counts, &mut buckets, n);
 
     // compact all the sorted substrings into the first m items of SA
     // 2*m must be not larger than n (proveable)
@@ -329,7 +327,7 @@ fn suffixsort(
     /* stage 3: induce the result for the original problem */
     /* put all left-most S characters into their buckets */
     get_counts(string, &mut counts);
-    get_buckets(&counts, &mut buckets, k, true);
+    get_buckets(&counts, &mut buckets, true);
     for item in suffix_array.iter_mut().take(n).skip(m) {
         *item = 0;
     }
@@ -342,9 +340,9 @@ fn suffixsort(
         }
     }
     if is_bwt {
-        pidx = compute_bwt(string, suffix_array, &mut counts, &mut buckets, n, k);
+        pidx = compute_bwt(string, suffix_array, &mut counts, &mut buckets, n);
     } else {
-        induce_sa(string, suffix_array, &mut counts, &mut buckets, n, k);
+        induce_sa(string, suffix_array, &mut counts, &mut buckets, n);
     }
 
     Ok(pidx)
@@ -400,11 +398,11 @@ mod tests {
         let mut b = vec![0; 256];
 
         let mut sa = vec![0, 0, 3, 5, 7, 0, 0, 0, 0, 0, 0];
-        induce_sa(&chars, &mut sa, &mut b, &mut c, chars.len(), 256);
+        induce_sa(&chars, &mut sa, &mut b, &mut c, chars.len());
         assert_eq!(sa, vec![10, 7, 0, 3, 5, 8, 1, 4, 6, 9, 2]);
 
         let mut sa = vec![0, 0, 7, 3, 5, 0, 0, 0, 0, 0, 0];
-        induce_sa(&chars, &mut sa, &mut b, &mut c, chars.len(), 256);
+        induce_sa(&chars, &mut sa, &mut b, &mut c, chars.len());
         assert_eq!(sa, vec![10, 7, 0, 3, 5, 8, 1, 4, 6, 9, 2]);
     }
 
@@ -441,7 +439,7 @@ mod tests {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ];
         assert_eq!(sa.len(), chars.len());
-        induce_sa(&chars, &mut sa, &mut b, &mut c, chars.len(), 256);
+        induce_sa(&chars, &mut sa, &mut b, &mut c, chars.len());
         assert_eq!(
             sa,
             vec![
